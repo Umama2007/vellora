@@ -2,7 +2,7 @@ import multer from "multer";
 import { Request } from "express";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4MB (fits within Vercel's 4.5MB payload limit)
 
 const storage = multer.memoryStorage();
 

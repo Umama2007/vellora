@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, MessageCircle, Bookmark, Share2, Trash2 } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Bookmark, Share2, Trash2, Camera } from "lucide-react";
 import Avatar from "../components/Avatar";
 import { formatCount } from "../components/PostCard";
 import { postsApi } from "../api/posts";
@@ -28,6 +28,8 @@ export default function PostDetail() {
   const [error, setError] = useState("");
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverError, setCoverError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +51,22 @@ export default function PostDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleCoverChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    setCoverError("");
+    try {
+      const result = await postsApi.uploadImage(file);
+      const updated = await postsApi.update(post.id, { coverImage: result.url });
+      setPost((p) => ({ ...p, coverImage: updated.coverImage || result.url }));
+    } catch (err) {
+      setCoverError(err.message || "Failed to update cover image.");
+    } finally {
+      setUploadingCover(false);
+    }
+  }
 
   async function toggleLike() {
     if (!user || !post) return;
@@ -125,9 +143,47 @@ export default function PostDetail() {
         <ArrowLeft size={18} /> Back
       </button>
 
-      {post.coverImage && (
-        <img src={getImageUrl(post.coverImage)} alt="" className="w-full h-48 md:h-72 object-cover rounded-2xl mb-6" />
+      {/* Cover Image Section */}
+      {(post.coverImage || isOwner) && (
+        <div className="relative mb-6 group">
+          {post.coverImage ? (
+            <img
+              src={getImageUrl(post.coverImage)}
+              alt={post.title || "Cover image"}
+              className="w-full h-48 md:h-72 object-cover rounded-2xl"
+            />
+          ) : (
+            <div className="w-full h-32 bg-plum-50/50 rounded-2xl border-2 border-dashed border-plum-100/80 flex items-center justify-center">
+              <label className="flex items-center gap-2 text-sm text-plum font-medium cursor-pointer hover:underline">
+                <Camera size={16} />
+                {uploadingCover ? "Uploading..." : "Add cover image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverChange}
+                  disabled={uploadingCover}
+                />
+              </label>
+            </div>
+          )}
+
+          {post.coverImage && isOwner && (
+            <label className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-plum/80 hover:bg-plum text-cream text-xs font-medium flex items-center gap-1.5 cursor-pointer backdrop-blur-sm shadow-md transition-all">
+              <Camera size={14} />
+              {uploadingCover ? "Uploading..." : "Change cover"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCoverChange}
+                disabled={uploadingCover}
+              />
+            </label>
+          )}
+        </div>
       )}
+      {coverError && <p className="text-xs text-red-600 mb-4">{coverError}</p>}
 
       <span className="pill bg-plum-50 text-plum mb-4">{post.category}</span>
       <h1 className="font-display text-2xl md:text-3xl font-semibold text-ink leading-tight mt-3">{post.title}</h1>

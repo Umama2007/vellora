@@ -10,20 +10,39 @@ export function SocketProvider({ children }) {
   const { user } = useAuth();
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setSocket(null);
       setConnected(false);
+      setConnectionError(false);
       return;
     }
 
     // withCredentials sends the same httpOnly auth cookie the REST API
     // uses — the server verifies it in server.ts's io.use() middleware
     // before allowing the connection. No separate fake socket auth.
-    const instance = io(SOCKET_URL, { withCredentials: true });
-    instance.on("connect", () => setConnected(true));
-    instance.on("disconnect", () => setConnected(false));
+    const instance = io(SOCKET_URL, {
+      withCredentials: true,
+      timeout: 5000,
+      reconnectionAttempts: 3,
+    });
+
+    instance.on("connect", () => {
+      setConnected(true);
+      setConnectionError(false);
+    });
+
+    instance.on("disconnect", () => {
+      setConnected(false);
+    });
+
+    instance.on("connect_error", () => {
+      setConnected(false);
+      setConnectionError(true);
+    });
+
     setSocket(instance);
 
     return () => {
@@ -32,7 +51,7 @@ export function SocketProvider({ children }) {
   }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={{ socket, connected }}>
+    <SocketContext.Provider value={{ socket, connected, connectionError }}>
       {children}
     </SocketContext.Provider>
   );

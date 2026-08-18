@@ -19,7 +19,7 @@ function timeAgo(dateString) {
 
 export default function Messages() {
   const { user } = useAuth();
-  const { socket, connected } = useSocket();
+  const { socket, connected, connectionError } = useSocket();
 
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -30,51 +30,75 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [mobileView, setMobileView] = useState("list");
+  const [showSocketNotice, setShowSocketNotice] = useState(true);
+  const [socketTimedOut, setSocketTimedOut] = useState(false);
   const scrollRef = useRef(null);
 
   const active = conversations.find((c) => c.id === activeId);
 
+  // Fallback timer for socket connection banner (6 seconds)
+  useEffect(() => {
+    if (connected) {
+      setSocketTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSocketTimedOut(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [connected]);
+
   const loadConversations = useCallback(async () => {
-    const data = await conversationsApi.list();
-    setConversations(data);
-    if (!activeId && data.length > 0) setActiveId(data[0].id);
-    setLoadingList(false);
-  }, [activeId]);
+    try {
+      const data = await conversationsApi.list();
+      setConversations(data || []);
+      setActiveId((prev) => prev || (data && data.length > 0 ? data[0].id : null));
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, [loadConversations]);
 
   useEffect(() => {
     if (!activeId) return;
     setLoadingMessages(true);
     conversationsApi
       .messages(activeId)
-      .then(setMessages)
+      .then((data) => setMessages(data || []))
+      .catch((err) => console.error("Failed to load messages:", err))
       .finally(() => setLoadingMessages(false));
-    conversationsApi.markRead(activeId).then(loadConversations);
 
-    if (socket) {
+    conversationsApi
+      .markRead(activeId)
+      .then(() => loadConversations())
+      .catch(() => {});
+
+    if (socket && connected) {
       socket.emit("conversation:join", activeId);
       return () => socket.emit("conversation:leave", activeId);
     }
-  }, [activeId, socket]);
+  }, [activeId, socket, connected, loadConversations]);
 
   // Real-time: new messages pushed from the server via Socket.IO land here.
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !connected) return;
     function handleNewMessage(payload) {
       if (payload.conversationId === activeId) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === payload.id)) return prev;
-          return [...prev, { ...payload, fromMe: payload.sender.id === user?.id }];
+          return [...prev, { ...payload, fromMe: payload.sender?.id === user?.id }];
         });
       }
       loadConversations();
     }
     socket.on("message:new", handleNewMessage);
     return () => socket.off("message:new", handleNewMessage);
-  }, [socket, activeId, user?.id]);
+  }, [socket, connected, activeId, user?.id, loadConversations]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -85,9 +109,15 @@ export default function Messages() {
     if (!draft.trim() || !activeId) return;
     const content = draft.trim();
     setDraft("");
-    const sent = await conversationsApi.send(activeId, content);
-    setMessages((prev) => [...prev, sent]);
-    loadConversations();
+    try {
+      const sent = await conversationsApi.send(activeId, content);
+      if (sent) {
+        setMessages((prev) => [...prev, sent]);
+        loadConversations();
+      }
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    }
   }
 
   async function handleUserSearch(e) {
@@ -97,24 +127,44 @@ export default function Messages() {
       setSearchResults([]);
       return;
     }
-    const data = await searchApi.search(q);
-    setSearchResults(data.users.filter((u) => u.id !== user?.id));
+    try {
+      const data = await searchApi.search(q);
+      setSearchResults(data.users.filter((u) => u.id !== user?.id));
+    } catch (err) {
+      console.error("User search failed:", err);
+    }
   }
 
   async function startConversationWith(username) {
-    const { id } = await conversationsApi.start(username);
-    setSearchQuery("");
-    setSearchResults([]);
-    await loadConversations();
-    setActiveId(id);
-    setMobileView("chat");
+    try {
+      const { id } = await conversationsApi.start(username);
+      setSearchQuery("");
+      setSearchResults([]);
+      await loadConversations();
+      setActiveId(id);
+      setMobileView("chat");
+    } catch (err) {
+      console.error("Failed to start conversation:", err);
+    }
   }
 
   return (
     <div className="flex h-full flex-col">
-      {!connected && (
-        <div className="bg-beige/60 border-b border-plum-100/60 px-6 py-2 text-center text-xs text-ink-muted">
-          Connecting to real-time messaging...
+      {!connected && showSocketNotice && (
+        <div className="bg-beige/60 border-b border-plum-100/60 px-6 py-2 flex items-center justify-between text-xs text-ink-muted">
+          <span>
+            {socketTimedOut || connectionError
+              ? "Real-time updates unavailable — refresh to see new messages"
+              : "Connecting to real-time messaging..."}
+          </span>
+          {(socketTimedOut || connectionError) && (
+            <button
+              onClick={() => setShowSocketNotice(false)}
+              className="text-ink-faint hover:text-ink text-[11px] underline ml-2 shrink-0"
+            >
+              Dismiss
+            </button>
+          )}
         </div>
       )}
       <div className="flex flex-1 min-h-0">
