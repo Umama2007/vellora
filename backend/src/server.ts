@@ -10,6 +10,7 @@ import app from "./app";
 
 const httpServer = http.createServer(app);
 
+// Real-time delivery does not work on Vercel's serverless platform — messages still persist via REST endpoints, but live push notifications require a persistent-server host (Render/Railway/Azure) instead.
 const io = new Server(httpServer, {
   cors: { origin: env.frontendUrl, credentials: true },
 });
@@ -64,8 +65,12 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(env.port, () => {
-  console.log(`Vellora API listening on http://localhost:${env.port}`);
-  console.log(`Socket.IO ready for real-time messaging`);
-  console.log(`Accepting requests from ${env.frontendUrl}`);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(env.port, () => {
+    console.log(`Vellora API listening on http://localhost:${env.port}`);
+    console.log(`Socket.IO ready for real-time messaging`);
+    console.log(`Accepting requests from ${env.frontendUrl}`);
+  });
+}
+
+export default app;
