@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "notifyOnLike" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "notifyOnComment" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "notifyOnFollow" BOOLEAN NOT NULL DEFAULT true;

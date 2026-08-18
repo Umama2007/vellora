@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid #4B294F;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D9CBE5;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-2xl shadow-card border border-plum-100/60;
+  }
+  .btn-primary {
+    @apply bg-plum text-cream font-medium rounded-xl px-5 py-2.5 hover:bg-plum-600 transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-secondary {
+    @apply bg-white text-plum font-medium rounded-xl px-5 py-2.5 border border-plum-100 hover:bg-plum-50 transition-colors;
+  }
+  .btn-ghost {
+    @apply text-ink-muted hover:text-plum hover:bg-plum-50 rounded-xl px-3 py-2 transition-colors;
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-plum-100 bg-white px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-plum-300 outline-none transition-colors;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium;
+  }
+}

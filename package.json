@@ -1,0 +1,37 @@
+{
+  "name": "vellora",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "backend:install": "npm install --prefix backend",
+    "backend:setup": "npx --prefix backend prisma generate --schema=backend/prisma/schema.prisma && npx --prefix backend prisma db push --schema=backend/prisma/schema.prisma",
+    "backend:dev": "npm run dev --prefix backend",
+    "setup:all": "npm install && npm run backend:install && npm run backend:setup",
+    "dev:all": "concurrently -n FRONTEND,BACKEND -c blue,magenta \"vite --open\" \"npm run backend:dev\"",
+    "test:e2e": "npm run test:e2e --prefix backend"
+  },
+  "dependencies": {
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
+    "oxlint": "^1.75.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "vite": "^8.2.0",
+    "vite-plugin-static-copy": "^4.1.1"
+  }
+}
