@@ -12,7 +12,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "test:e2e": "node scripts/e2e-test.mjs",
-    "setup": "npm install && prisma generate && prisma migrate deploy"
+    "setup": "npm install && prisma generate && prisma migrate deploy",
+    "vercel-build": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",

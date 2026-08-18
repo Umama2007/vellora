@@ -1,58 +1,12 @@
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import cookie from "cookie";
-import path from "path";
 import http from "http";
+import cookie from "cookie";
 import { Server } from "socket.io";
 import { env } from "./config/env";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import { upload } from "./middleware/upload";
-import { uploadImage } from "./controllers/uploadController";
-import { requireAuth } from "./middleware/auth";
 import { AUTH_COOKIE_NAME, verifyAuthToken } from "./utils/token";
 import { prisma } from "./config/prisma";
 import { setIO } from "./config/socket";
+import app from "./app";
 
-import authRoutes from "./routes/authRoutes";
-import postRoutes from "./routes/postRoutes";
-import commentRoutes from "./routes/commentRoutes";
-import userRoutes from "./routes/userRoutes";
-import searchRoutes from "./routes/searchRoutes";
-import notificationRoutes from "./routes/notificationRoutes";
-import conversationRoutes from "./routes/conversationRoutes";
-import statsRoutes from "./routes/statsRoutes";
-
-const app = express();
-
-app.use(
-  cors({
-    origin: env.frontendUrl,
-    credentials: true,
-  })
-);
-app.use(express.json());
-app.use(cookieParser());
-
-// Serve locally uploaded images. Swap for a cloud storage URL in
-// production by changing UPLOAD_DIR handling + uploadController.
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
-
-app.get("/api/health", (_req, res) => res.json({ success: true, data: { status: "ok" } }));
-
-app.use("/api/auth", authRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/search", searchRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/conversations", conversationRoutes);
-app.use("/api/stats", statsRoutes);
-
-app.post("/api/uploads", requireAuth, upload.single("image"), uploadImage);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
 
 const httpServer = http.createServer(app);
 
