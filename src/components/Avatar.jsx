@@ -12,7 +12,7 @@ export default function Avatar({ src, alt, size = 40, online, className = "" }) 
     <div className={`relative shrink-0 ${className}`} style={{ width: size, height: size }}>
       {src ? (
         <img
-          src={getImageUrl(src)}
+          src={getImageUrl(src, "c_fill,w_150,q_auto")}
           alt={alt}
           width={size}
           height={size}

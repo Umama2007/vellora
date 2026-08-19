@@ -71,7 +71,7 @@ export default function PostCard({ post, compact = false, onChange }) {
         <div className="aspect-[16/9] overflow-hidden bg-lilac">
           {post.coverImage ? (
             <img
-              src={getImageUrl(post.coverImage)}
+              src={getImageUrl(post.coverImage, "c_fill,w_600,q_auto")}
               alt=""
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />

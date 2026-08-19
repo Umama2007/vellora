@@ -21,11 +21,16 @@ setIO(io);
 // that fails this never gets a userId and is disconnected immediately.
 io.use((socket, next) => {
   try {
-    const rawCookie = socket.handshake.headers.cookie;
-    if (!rawCookie) return next(new Error("Not authenticated"));
+    let token = socket.handshake.auth?.token;
 
-    const parsed = cookie.parse(rawCookie);
-    const token = parsed[AUTH_COOKIE_NAME];
+    if (!token) {
+      const rawCookie = socket.handshake.headers.cookie;
+      if (rawCookie) {
+        const parsed = cookie.parse(rawCookie);
+        token = parsed[AUTH_COOKIE_NAME];
+      }
+    }
+
     if (!token) return next(new Error("Not authenticated"));
 
     const payload = verifyAuthToken(token);

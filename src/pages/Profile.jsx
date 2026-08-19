@@ -30,9 +30,11 @@ export default function Profile() {
     setLoading(true);
     setError("");
     try {
-      const profileData = await usersApi.getProfile(username);
+      const [profileData, postsData] = await Promise.all([
+        usersApi.getProfile(username),
+        postsApi.list({ authorUsername: username, limit: 24 })
+      ]);
       setProfile(profileData);
-      const postsData = await postsApi.list({ authorUsername: username, limit: 24 });
       setPosts(postsData.posts);
     } catch (err) {
       setError(err.message || "Couldn't load this profile.");

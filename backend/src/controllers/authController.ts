@@ -24,7 +24,7 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     const token = signAuthToken({ userId: user.id });
     res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions);
 
-    return ok(res, serializeUser(user), 201);
+    return ok(res, { user: serializeUser(user), token }, 201);
   } catch (err) {
     next(err);
   }
@@ -50,7 +50,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const token = signAuthToken({ userId: user.id });
     res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions);
 
-    return ok(res, serializeUser(user));
+    return ok(res, { user: serializeUser(user), token });
   } catch (err) {
     next(err);
   }
@@ -65,7 +65,11 @@ export async function me(req: Request, res: Response, next: NextFunction) {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId! } });
     if (!user) throw Errors.unauthorized();
-    return ok(res, serializeUser(user));
+    
+    // Generate a fresh token in case it's requested via an existing cookie
+    // but the frontend needs it to store in memory for future auth header requests.
+    const token = signAuthToken({ userId: user.id });
+    return ok(res, { user: serializeUser(user), token });
   } catch (err) {
     next(err);
   }

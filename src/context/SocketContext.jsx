@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "./AuthContext";
+import { api } from "../api/client";
 
 const SocketContext = createContext(null);
 
@@ -23,8 +24,10 @@ export function SocketProvider({ children }) {
     // withCredentials sends the same httpOnly auth cookie the REST API
     // uses — the server verifies it in server.ts's io.use() middleware
     // before allowing the connection. No separate fake socket auth.
+    // We also send the token explicitly in case third-party cookies are blocked.
     const instance = io(SOCKET_URL, {
       withCredentials: true,
+      auth: { token: api.getToken() },
       timeout: 5000,
       reconnectionAttempts: 3,
     });

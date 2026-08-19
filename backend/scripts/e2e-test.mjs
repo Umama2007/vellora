@@ -101,11 +101,11 @@ async function main() {
     password: "correcthorsebatterystaple",
     confirmPassword: "correcthorsebatterystaple",
   });
-  assert(signupA.ok && signupA.data.username === `usera_${stamp}`, "User A can sign up");
-  assert(!("passwordHash" in (signupA.data || {})), "password hash is never returned to the client");
+  assert(signupA.ok && signupA.data?.user?.username === `usera_${stamp}`, "User A can sign up");
+  assert(!("passwordHash" in (signupA.data?.user || {})), "password hash is never returned to the client");
 
   const meA = await a.get("/auth/me");
-  assert(meA.ok && meA.data.username === `usera_${stamp}`, "GET /auth/me returns the real logged-in user after signup");
+  assert(meA.ok && meA.data?.user?.username === `usera_${stamp}`, "GET /auth/me returns the real logged-in user after signup");
 
   const editProfile = await a.patch("/users/me", { bio: "Editing my real bio", location: "Testville" });
   assert(editProfile.ok && editProfile.data.bio === "Editing my real bio", "User A can edit their profile");
@@ -130,6 +130,13 @@ async function main() {
   const publishedRefetch = await a.get(`/posts/${draft.data.id}`);
   assert(publishedRefetch.data.published === true, "published state survives a simulated refresh");
 
+  const coverImageEdit = await a.patch(`/posts/${draft.data.id}`, { coverImage: "http://example.com/cover.jpg" });
+  assert(coverImageEdit.ok && coverImageEdit.data.coverImage === "http://example.com/cover.jpg", "User A can edit the cover image");
+  assert(coverImageEdit.data.published === true, "cover image edit does NOT silently reset published status to false in the response");
+
+  const postAfterCoverEdit = await a.get(`/posts/${draft.data.id}`);
+  assert(postAfterCoverEdit.data.published === true, "published state is preserved in DB after cover image edit");
+
   section("User B: signup, publish a post for A to interact with");
   const signupB = await b.post("/auth/signup", {
     name: "Test User B",
@@ -138,7 +145,7 @@ async function main() {
     password: "correcthorsebatterystaple",
     confirmPassword: "correcthorsebatterystaple",
   });
-  assert(signupB.ok, "User B can sign up");
+  assert(signupB.ok && signupB.data?.user?.username === `userb_${stamp}`, "User B can sign up");
 
   const postB = await b.post("/posts", {
     title: "A Post By User B",
@@ -222,7 +229,7 @@ async function main() {
   assert(bEntry.points > 0, "leaderboard points are a real positive number derived from real activity");
 
   const meBAfterActivity = await b.get("/auth/me");
-  assert(meBAfterActivity.data.currentStreak >= 1, "User B's streak incremented after real publish activity");
+  assert(meBAfterActivity.data?.user?.currentStreak >= 1, "User B's streak incremented after real publish activity");
 
   const achievementsB = await a.get(`/users/userb_${stamp}/achievements`);
   const firstPostBadge = achievementsB.data?.find((ach) => ach.key === "first_post");
@@ -340,7 +347,7 @@ async function main() {
     identifier: `usera_${stamp}@test.local`,
     password: "correcthorsebatterystaple",
   });
-  assert(loginAgain.ok, "User A can log back in after logging out");
+  assert(loginAgain.ok && loginAgain.data?.user?.username === `usera_${stamp}`, "User A can log back in after logging out");
 
   const postsAfterRelogin = await a.get(`/posts?authorUsername=usera_${stamp}`);
   assert(

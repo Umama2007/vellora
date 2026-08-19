@@ -8,13 +8,16 @@ class ApiRequestError extends Error {
 }
 
 async function request(path, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    ...(options.headers || {}),
+  };
+
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -27,7 +30,11 @@ async function request(path, options = {}) {
   return body?.data;
 }
 
+let authToken = null;
+
 export const api = {
+  setToken: (token) => { authToken = token; },
+  getToken: () => authToken,
   get: (path) => request(path),
   post: (path, data) => request(path, { method: "POST", body: data ? JSON.stringify(data) : undefined }),
   patch: (path, data) => request(path, { method: "PATCH", body: data ? JSON.stringify(data) : undefined }),
@@ -35,9 +42,14 @@ export const api = {
   upload: async (path, file, fieldName = "image") => {
     const formData = new FormData();
     formData.append(fieldName, file);
+    
+    const headers = {};
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
     const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
       credentials: "include",
+      headers,
       body: formData,
     });
     const body = await res.json();

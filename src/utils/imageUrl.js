@@ -1,8 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 const BACKEND_BASE = API_URL.replace(/\/api$/, "");
 
-export function getImageUrl(path) {
+export function getImageUrl(path, transform = "") {
   if (!path) return "";
+  
+  if (path.includes("res.cloudinary.com") && transform) {
+    return path.replace("/upload/", `/upload/${transform}/`);
+  }
+
   if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) {
     return path;
   }
